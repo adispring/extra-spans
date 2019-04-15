@@ -1,8 +1,9 @@
 import * as R from 'ramda'
-import { addStart } from './common'
-import { splitLinks } from './link'
-import { splitAts } from './at'
+import { addStart, stringifySpans, ContentTypeInSpan } from './common'
+import { splitLinks, transformLinkSpan } from './link'
+import { splitAts, transformAtSpan } from './at'
 
+const { AT_USER, LINK } = ContentTypeInSpan
 const linkString =
   'hehttps://www.baidu.com?abc=1&cde=2he https://www.google.com?fgh=1&cde=2he'
 const richTextString =
@@ -20,10 +21,30 @@ const splitSpans = R.compose(
   splitAts
 )
 
+const transformSpans = R.curry((conversationId, all) =>
+  R.compose(
+    R.map(
+      R.cond([
+        [R.propEq('type', AT_USER), transformAtSpan(conversationId)],
+        [R.propEq('type', LINK), transformLinkSpan],
+        [R.T, R.identity]
+      ])
+    ),
+    R.filter(R.is(Object))
+  )(all)
+)
+
+const parseRichText = (conversationId, text) =>
+  R.compose(
+    R.applySpec({
+      spans: transformSpans(conversationId),
+      text: stringifySpans
+    }),
+    splitSpans
+  )(text)
+
 const spans = splitSpans(richTextString)
 console.log(spans)
 
-const stringifySpans = R.reduce(
-  R.useWith(R.concat, [R.identity, R.when(R.is(Object), R.path(['name']))]),
-  ''
-)
+const businessContent = parseRichText('666', richTextString)
+console.log('businessContent', businessContent)

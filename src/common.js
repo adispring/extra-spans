@@ -62,3 +62,11 @@ export const addStart = all => {
   }
   return allWithStarts
 }
+
+export const stringifySpans = R.reduce(
+  R.useWith(R.concat, [
+    R.identity,
+    R.when(R.is(Object), R.path(['displayContent']))
+  ]),
+  ''
+)

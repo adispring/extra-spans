@@ -2,7 +2,8 @@ import * as R from 'ramda'
 import {
   findAllMatches,
   ContentTypeInSpan,
-  splitToBeAndNotToBes
+  splitToBeAndNotToBes,
+  renameKeys
 } from './common'
 
 const { LINK } = ContentTypeInSpan
@@ -10,9 +11,10 @@ const { LINK } = ContentTypeInSpan
 const LinkRegex = /https?:\/\/[\w|=|?|#|%|.|/|&|\-|,]+/g
 
 const linkTransformer = R.applySpec({
-  content: R.path([0]),
+  content: R.always(''),
+  displayContent: R.path([0]),
+  schema: R.path([0]),
   length: R.path([0, 'length']),
-  name: R.path([0]),
   type: R.always(LINK)
 })
 
@@ -23,3 +25,5 @@ export const splitLinks = splitToBeAndNotToBes(
   findAllLinkMatches,
   findAllLinkUnmatches
 )
+
+export const transformLinkSpan = R.omit(['displayContent'])
