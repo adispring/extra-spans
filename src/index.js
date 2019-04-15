@@ -7,13 +7,13 @@ const { AT_USER, LINK } = ContentTypeInSpan
 const linkString =
   'hehttps://www.baidu.com?abc=1&cde=2he https://www.google.com?fgh=1&cde=2he'
 const richTextString =
-  'haha <at>id=108663445462&name=@王重阳</at> hehttps://www.baidu.com?abc=1&cde=2he<at>id=107958025341&name=@王鹏</at> 你好<at>id=953998689185147&name=@鸣人测试1</at>'
+  'haha <at>id=108663445462&name=@王重阳</at> hehttps://www.baidu.com?abc=1&cde=2he<at>id=107958025341&name=@王鹏</at> 你好<at>id=953998689185147&name=@鸣人测试1</at> 所有：<at>id=-1&name=@所有人</at>'
 
-const links = splitLinks(linkString)
-console.log('links', links)
+// const links = splitLinks(linkString)
+// console.log('links', links)
 
-const ats = splitAts(richTextString)
-console.log('ats', ats)
+// const ats = splitAts(richTextString)
+// console.log('ats', ats)
 
 const splitSpans = R.compose(
   addStart,
@@ -34,8 +34,21 @@ const transformSpans = R.curry((conversationId, all) =>
   )(all)
 )
 
+const getOtherAtInfo = R.compose(
+  R.applySpec({
+    clientMentionedUsers: R.identity,
+    clientImportantToUsers: R.identity,
+    allUsersMentioned: R.includes('-1'),
+    importantToAllUsers: R.includes('-1')
+  }),
+  R.pluck('content'),
+  R.filter(R.propEq('type', AT_USER)),
+  R.pathOr([], ['spans'])
+)
+
 const parseRichText = (conversationId, text) =>
   R.compose(
+    R.converge(R.mergeRight, [R.identity, getOtherAtInfo]),
     R.applySpec({
       spans: transformSpans(conversationId),
       text: stringifySpans
@@ -43,8 +56,8 @@ const parseRichText = (conversationId, text) =>
     splitSpans
   )(text)
 
-const spans = splitSpans(richTextString)
-console.log(spans)
+// const spans = splitSpans(richTextString)
+// console.log(spans)
 
 const businessContent = parseRichText('666', richTextString)
 console.log('businessContent', businessContent)

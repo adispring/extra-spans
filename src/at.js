@@ -1,6 +1,5 @@
 import * as R from 'ramda'
 import {
-  renameKeys,
   findAllMatches,
   ContentTypeInSpan,
   splitToBeAndNotToBes
@@ -8,8 +7,8 @@ import {
 
 const { AT_USER } = ContentTypeInSpan
 
-const atRegex = /<at>id=\d+&name=@.+?<\/at>/g
-const atIdNameRegex = /<at>id=(\d+)&name=(@.+?)<\/at>/g
+const atRegex = /<at>id=[\d|-]+&name=@.+?<\/at>/g
+const atIdNameRegex = /<at>id=([\d|-]+)&name=(@.+?)<\/at>/g
 
 const atTransformer = R.applySpec({
   content: R.path([1]),
@@ -26,13 +25,18 @@ export const splitAts = splitToBeAndNotToBes(
   findAllAtUnmatches
 )
 
+const createSchema = (conversationId, content) =>
+  R.ifElse(
+    R.equals('-1'),
+    R.always(''),
+    () => `rocket://user/profile?uid=${content}&con_id=${conversationId}`
+  )(content)
+
 export const transformAtSpan = R.curry((conversationId, span) =>
   R.compose(
     spanVal => ({
       ...spanVal,
-      schema: `rocket://user/profile?uid=${
-        spanVal.content
-      }&con_id=${conversationId}`
+      schema: createSchema(conversationId, spanVal.content)
     }),
     R.omit(['displayContent'])
   )(span)
