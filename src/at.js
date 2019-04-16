@@ -50,12 +50,7 @@ export const getOtherAtInfo = R.compose(
     importantToAllUsers: R.includes('-1')
   }),
   R.uniq,
-  R.map(
-    R.compose(
-      Number,
-      R.path(['content'])
-    )
-  ),
+  R.pluck('content'),
   R.filter(R.propEq('type', AT_USER)),
   R.pathOr([], ['content', 'spans'])
 )
