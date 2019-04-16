@@ -5,6 +5,11 @@ export const ContentTypeInSpan = {
   AT_USER: 1
 }
 
+export const MessageType = {
+  MESSAGE_TYPE_TEXT: 10001,
+  MESSAGE_TYPE_LINK: 10009
+}
+
 export const renameKeys = R.curry((keysMap, obj) =>
   R.reduce(
     (acc, key) => R.assoc(keysMap[key] || key, obj[key], acc),

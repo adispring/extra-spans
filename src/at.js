@@ -41,3 +41,21 @@ export const transformAtSpan = R.curry((conversationId, span) =>
     R.omit(['displayContent'])
   )(span)
 )
+
+export const getOtherAtInfo = R.compose(
+  R.applySpec({
+    clientMentionedUsers: R.identity,
+    clientImportantToUsers: R.identity,
+    allUsersMentioned: R.includes('-1'),
+    importantToAllUsers: R.includes('-1')
+  }),
+  R.uniq,
+  R.map(
+    R.compose(
+      Number,
+      R.path(['content'])
+    )
+  ),
+  R.filter(R.propEq('type', AT_USER)),
+  R.pathOr([], ['content', 'spans'])
+)

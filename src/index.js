@@ -1,19 +1,27 @@
 import * as R from 'ramda'
-import { addStart, stringifySpans, ContentTypeInSpan } from './common'
+import {
+  addStart,
+  stringifySpans,
+  ContentTypeInSpan,
+  MessageType
+} from './common'
 import { splitLinks, transformLinkSpan } from './link'
-import { splitAts, transformAtSpan } from './at'
+import { splitAts, transformAtSpan, getOtherAtInfo } from './at'
 
-const { AT_USER, LINK } = ContentTypeInSpan
 const linkString =
   'hehttps://www.baidu.com?abc=1&cde=2he https://www.google.com?fgh=1&cde=2he'
 const richTextString =
   'haha <at>id=108663445462&name=@王重阳</at> hehttps://www.baidu.com?abc=1&cde=2he<at>id=107958025341&name=@王鹏</at> 你好<at>id=953998689185147&name=@鸣人测试1</at> 所有：<at>id=-1&name=@所有人</at>'
-
+const pureLinkString = 'https://www.google.com?abc=123&def=456'
 // const links = splitLinks(linkString)
 // console.log('links', links)
 
 // const ats = splitAts(richTextString)
 // console.log('ats', ats)
+
+const { AT_USER, LINK } = ContentTypeInSpan
+
+const { MESSAGE_TYPE_TEXT, MESSAGE_TYPE_LINK } = MessageType
 
 const splitSpans = R.compose(
   addStart,
@@ -34,21 +42,27 @@ const transformSpans = R.curry((conversationId, all) =>
   )(all)
 )
 
-const getOtherAtInfo = R.compose(
-  R.applySpec({
-    clientMentionedUsers: R.identity,
-    clientImportantToUsers: R.identity,
-    allUsersMentioned: R.includes('-1'),
-    importantToAllUsers: R.includes('-1')
-  }),
-  R.pluck('content'),
-  R.filter(R.propEq('type', AT_USER)),
-  R.pathOr([], ['spans'])
-)
+const createMessageType = ({ spans = [], text = '' }) => {
+  const messageType =
+    spans.length === 1 &&
+    R.pathEq([0, 'type'], LINK, spans) &&
+    R.pathEq([0, 'length'], text.length, spans)
+      ? MESSAGE_TYPE_LINK
+      : MESSAGE_TYPE_TEXT
+  return messageType
+}
 
-const parseRichText = (conversationId, text) =>
+export const parseRichText = (conversationId, text) =>
   R.compose(
-    R.converge(R.mergeRight, [R.identity, getOtherAtInfo]),
+    R.ifElse(
+      R.propEq('messageType', MESSAGE_TYPE_TEXT),
+      R.converge(R.mergeRight, [R.identity, getOtherAtInfo]),
+      R.evolve({ content: R.omit(['spans']) })
+    ),
+    R.applySpec({
+      content: R.identity,
+      messageType: createMessageType
+    }),
     R.applySpec({
       spans: transformSpans(conversationId),
       text: stringifySpans
@@ -59,5 +73,5 @@ const parseRichText = (conversationId, text) =>
 // const spans = splitSpans(richTextString)
 // console.log(spans)
 
-const businessContent = parseRichText('666', richTextString)
-console.log('businessContent', businessContent)
+const msgContent = parseRichText('666', richTextString)
+console.log('msgContent', msgContent)
